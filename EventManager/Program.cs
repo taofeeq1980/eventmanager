@@ -15,16 +15,16 @@ namespace EventManager
         public string City { get; set; }
     }
 
-    public class CityDistanceRequest
-    {
-        public string FromCity { get; set; }
-        public List<string> ToCities { get; set; }
-    }
-    public class CityDistanceResponse
-    {
-        public string ToCity { get; set; }
-        public int Distance { get; set; }
-    }
+    //public class CityDistanceRequest
+    //{
+    //    public string FromCity { get; set; }
+    //    public List<string> ToCities { get; set; }
+    //}
+    //public class CityDistanceResponse
+    //{
+    //    public string ToCity { get; set; }
+    //    public int Distance { get; set; }
+    //}
     internal class Program
     {
         static void Main(string[] args)
@@ -72,23 +72,23 @@ namespace EventManager
             //1.What should be your approach to getting the distance between the customer’s city and the other cities on the list ?
             //2.How would you get the 5 closest events and how would you send them to the client in an email?
 
-            var customerAndCityEvents = customers.Select(c => new 
+            var customerAndCityEvents = customers.Select(c => new
             {
-                customer = c, 
+                customer = c,
                 cityEvents = events.Select(e => new { distance = c.City == e.City ? 0 : GetDistance(c.City, e.City), customerEvent = e })
                                .OrderBy(x => x.distance)
                                .Take(5)
             }).ToList();
             foreach (var (cityCustomers, cityEvents) in from cityCustomer in customerAndCityEvents
-                                                     from cityEvent in cityCustomer.cityEvents   
-                                           select (cityCustomer, cityEvent))      
+                                                        from cityEvent in cityCustomer.cityEvents
+                                                        select (cityCustomer, cityEvent))
             {
-                AddToEmail(cityCustomers.customer, cityEvents.customerEvent); 
+                AddToEmail(cityCustomers.customer, cityEvents.customerEvent);
             }
             //Q5
             var customerEventsWithPrice = customers.Select(c => new
             {
-                customer = c, 
+                customer = c,
                 cityEvents = events.Select(e => new { distance = c.City == e.City ? 0 : GetDistance(c.City, e.City), customerEvent = e, price = GetPrice(e) })
                                .OrderBy(x => x.distance)
                                .ThenBy(p => p.price)
@@ -96,8 +96,8 @@ namespace EventManager
             }).ToList();
 
             foreach (var (cityCustomers, cityEvents) in from cityCustomer in customerEventsWithPrice
-                                           from cityEvent in cityCustomer.cityEvents
-                                           select (cityCustomer, cityEvent))
+                                                        from cityEvent in cityCustomer.cityEvents
+                                                        select (cityCustomer, cityEvent))
             {
                 AddToEmail(cityCustomers.customer, cityEvents.customerEvent, cityEvents.price);
             }
@@ -148,22 +148,23 @@ namespace EventManager
             }
         }
 
-        //3. If the GetDistance method is an API call which could fail or is too expensive, how will u improve the code written in 2? Write the code.
-        private static List<CityDistanceResponse> GetDistanceRefactoring(List<CityDistanceRequest> cityDistanceRequest)
+        //Q3. If the GetDistance method is an API call which could fail or is too expensive, how will u improve the code written in 2? Write the code.
+        private static Dictionary<string, int> GetDistanceRefactoring(Dictionary<string, List<string>> cityDistanceRequest)
         {
-            var cityDistances = new List<CityDistanceResponse>();
-            foreach (var item in cityDistanceRequest)
+            var cityDistances = new Dictionary<string, int>();
+            foreach (var (item, toCity) in from item in cityDistanceRequest
+                                           from toCity in item.Value
+                                           select (item, toCity))
             {
-                foreach (var toCity in item.ToCities)
+                if (item.Key == toCity)
                 {
-                    if (item.FromCity == toCity)
-                    {
-                        cityDistances.Add(new CityDistanceResponse { ToCity = toCity, Distance = 0 });
-                        continue;
-                    }
-                    cityDistances.Add(new CityDistanceResponse { ToCity = toCity, Distance = AlphebiticalDistance(item.FromCity, toCity) });
+                    cityDistances.Add(toCity, 0);
+                    continue;
                 }
+
+                cityDistances.Add(toCity, AlphebiticalDistance(item.Key, toCity));
             }
+
             return cityDistances;
         }
     }
